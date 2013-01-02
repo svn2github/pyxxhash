@@ -33,29 +33,49 @@
 #include "xxhash.h"
 
 static char pyxxhash_docstring[]= "Python wrapper for fast hash library xxhash";
+void *pstate=0;
 
-static PyObject *pyxxhash_fast32(PyObject *self,PyObject *args)
+static PyObject *pyxxhash_XXH32(PyObject *self,PyObject *args)
 {
-  const char *input;
+  const void *input;
   int len;
   unsigned int seed,result;
   if (!PyArg_ParseTuple(args,"s|i|I",&input,&len,&seed)) return NULL;
-  result=XXH_fast32(input,len,seed);
+  result=XXH32(input,len,seed);
   return Py_BuildValue("I",result);
 }
-static PyObject *pyxxhash_strong32(PyObject *self,PyObject *args)
+static PyObject *pyxxhash_init(PyObject *self,PyObject *args)
 {
-  const char *input;
-  int len;
-  unsigned int seed,result;
-  if (!PyArg_ParseTuple(args,"s|i|I",&input,&len,&seed)) return NULL;
-  result=XXH_strong32(input,len,seed);
+  unsigned int result,seed;
+
+  if (!PyArg_ParseTuple(args,"I",&seed)) return NULL;
+  pstate=XXH32_init(seed);
+  if (pstate==0)
+    {
+      result=1;
+    }else
+    result=0;
   return Py_BuildValue("I",result);
 }
-
+static PyObject *pyxxhash_feed(PyObject *self,PyObject *args)
+{
+  const void *input;
+  int len,result;
+  if (!PyArg_ParseTuple(args,"s|i",&input,&len)) return NULL;
+  result=XXH32_feed(pstate,input,len);
+  return Py_BuildValue("i",result);
+}
+static PyObject *pyxxhash_result(PyObject *self,PyObject *args)
+{
+  unsigned int result;
+  result=XXH32_result(pstate);
+  return Py_BuildValue("I",result);
+}
 static PyMethodDef pyxxhash_methods[]={
-  {"fast32",pyxxhash_fast32,METH_VARARGS,pyxxhash_docstring},
-  {"strong32",pyxxhash_strong32,METH_VARARGS,pyxxhash_docstring},
+  {"xxh32",pyxxhash_XXH32,METH_VARARGS,pyxxhash_docstring},
+  {"init",pyxxhash_init,METH_VARARGS,pyxxhash_docstring},
+  {"feed",pyxxhash_feed,METH_VARARGS,pyxxhash_docstring},
+  {"result",pyxxhash_result,METH_VARARGS,pyxxhash_docstring},
   {NULL,NULL,0,NULL}
 };
 
